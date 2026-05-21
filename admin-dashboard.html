@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="Admin dashboard — Forefront Cleaning Solutions">
+    <meta name="theme-color" content="#071021">
+    <link rel="manifest" href="manifest.json">
+    <title>Admin Dashboard — Forefront Cleaning Solutions</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body data-page="admin-dashboard">
+    <div class="page">
+        <!-- Header -->
+        <div class="dash-header">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <img src="logo.jpeg" alt="Logo" style="height: 50px; width: auto; border-radius: 8px;">
+                <div>
+                    <h1 class="dash-title">Admin Dashboard</h1>
+                    <p class="dash-sub">Forefront Cleaning Solutions</p>
+                </div>
+            </div>
+            <div class="dash-actions">
+                <a href="index.html" class="btn dark">Home</a>
+                <a href="register.html" class="btn dark">Create Customer</a>
+                <a href="customer-dashboard.html" class="btn dark">Customer Portal</a>
+                <button id="logout-button" class="btn primary" type="button">Logout</button>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-4 grid-cols-2-sm">
+            <div class="stat-card">
+                <div class="stat-label">Total Customers</div>
+                <div class="stat-value" id="admin-total-customers">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Invoices</div>
+                <div class="stat-value" id="admin-total-invoices">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Amount Paid</div>
+                <div class="stat-value" id="admin-amount-paid">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Amount Pending</div>
+                <div class="stat-value" id="admin-amount-pending">--</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Pending Requests</div>
+                <div class="stat-value" id="admin-pending-requests">--</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card block">
+            <h2>⚡ Quick Actions</h2>
+            <div class="quick-actions" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                <button class="btn dark" onclick="refreshDashboard()">🔄 Refresh Dashboard</button>
+                <button class="btn" onclick="exportCustomers()">📥 Export Customers</button>
+                <button class="btn" onclick="showAddCustomerModal()">➕ Add Customer</button>
+                <button class="btn" onclick="generateReport()">📊 Generate Report</button>
+                <button class="btn warning" onclick="showPasswordChangeModal()">🔐 Change Password</button>
+                <button class="btn success" onclick="showServiceManagement()">🛠️ Manage Services</button>
+                <button class="btn info" onclick="showCustomerTools()">👥 Customer Tools</button>
+                <button class="btn primary" onclick="showAnalytics()">📊 Analytics</button>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid">
+            <!-- Customer Management -->
+            <div class="card block">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h2>👥 Customer Management</h2>
+                    <div class="table-actions">
+                        <button class="btn dark" onclick="refreshCustomers()">🔄 Refresh</button>
+                        <button class="btn" onclick="exportCustomers()">📥 Export</button>
+                    </div>
+                </div>
+                <div class="table-wrap" role="region" aria-label="Customers table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Invoices</th>
+                                <th>Requests</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-customer-body">
+                            <tr>
+                                <td colspan="7" style="text-align:center; padding:18px; color:#6b7280;">Loading customers...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Invoice Creation -->
+            <div class="card block">
+                <h2>📄 Create Invoice</h2>
+                <form id="invoice-form" class="form">
+                    <div class="form-group">
+                        <label for="customer_id">Customer Email/Company *</label>
+                        <input type="text" id="customer_id" name="customer_id" placeholder="Enter customer email or company name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="invoice_number">Invoice Number *</label>
+                        <input type="text" id="invoice_number" name="invoice_number" placeholder="INV-0001" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description *</label>
+                        <textarea id="description" name="description" rows="3" placeholder="Describe the services provided..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount ($) *</label>
+                        <input type="number" id="amount" name="amount" step="0.01" min="0" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date">Due Date *</label>
+                        <input type="date" id="due_date" name="due_date" required>
+                    </div>
+                    <div id="invoice-submit-notice" class="notice" style="display: none;"></div>
+                    <button type="submit" class="btn primary">Create Invoice</button>
+                </form>
+                <p class="hint">This form creates an invoice for a registered customer.</p>
+            </div>
+
+            <!-- Service Requests Management -->
+            <div class="card block">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h2>🛠️ Service Requests</h2>
+                    <div class="table-actions">
+                        <button class="btn dark" onclick="refreshRequests()">🔄 Refresh</button>
+                        <button class="btn" onclick="exportRequests()">📥 Export</button>
+                    </div>
+                </div>
+                <div class="table-wrap" role="region" aria-label="Service requests table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Service Type</th>
+                                <th>Description</th>
+                                <th>Requested Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-requests-body">
+                            <tr>
+                                <td colspan="6" style="text-align:center; padding:18px; color:#6b7280;">Loading service requests...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <dialog id="customer-dialog" style="border: 1px solid rgba(255,255,255,.14); border-radius: 16px; background: rgba(10,14,30,.96); color: rgba(255,255,255,.92); width: min(820px, calc(100vw - 24px)); box-shadow: 0 24px 70px rgba(0,0,0,.45);">
+            <div style="display:flex; justify-content: space-between; gap: 14px; align-items:flex-start; padding: 14px 14px 10px;">
+                <div>
+                    <div style="font-weight: 900; letter-spacing: -.2px; font-size: 16px;">Customer account</div>
+                    <div id="customer-dialog-sub" class="muted" style="margin-top: 4px;">—</div>
+                </div>
+                <button id="customer-dialog-close" class="btn dark" type="button" style="padding: 10px 12px;">Close</button>
+            </div>
+            <div style="padding: 0 14px 14px;">
+                <div id="customer-dialog-body" class="notice" style="background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.10);"></div>
+                <div class="muted" style="margin-top: 10px;">Security note: this is a demo. Don't store real passwords in localStorage in production.</div>
+            </div>
+        </dialog>
+
+        <!-- Password Change Modal -->
+        <dialog id="password-change-dialog" style="border: 1px solid rgba(255,255,255,.14); border-radius: 16px; background: rgba(10,14,30,.96); color: rgba(255,255,255,.92); width: min(820px, calc(100vw - 24px)); box-shadow: 0 24px 70px rgba(0,0,0,.45);">
+            <div style="display:flex; justify-content: space-between; gap:14px; align-items:flex-start; padding:14px 14px 10px;">
+                <div>
+                    <div style="font-weight: 900; letter-spacing: -.2px; font-size: 16px;">Change Admin Password</div>
+                    <div id="password-change-sub" class="muted" style="margin-top: 4px;">Update your admin account password</div>
+                </div>
+                <button id="password-change-close" class="btn dark" type="button" style="padding: 10px 12px;">Close</button>
+            </div>
+            <div style="padding: 0 14px 14px;">
+                <div id="password-change-body" class="notice" style="background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.10); padding: 20px; border-radius: 8px;">
+                    <form id="password-change-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Current Password</label>
+                            <input type="password" id="current-password" placeholder="Enter current password" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;" required>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">New Password</label>
+                            <input type="password" id="new-password" placeholder="Enter new password" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;" required>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Confirm New Password</label>
+                            <input type="password" id="confirm-new-password" placeholder="Confirm new password" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;" required>
+                        </div>
+                        <button type="button" onclick="changeAdminPassword()" class="btn primary" style="margin-top: 12px; padding: 12px 24px;">Update Password</button>
+                    </form>
+                </div>
+                <div id="password-change-message" style="margin-top: 12px; font-size: 14px;"></div>
+            </div>
+        </dialog>
+
+        <!-- Service Management Modal -->
+        <dialog id="service-management-dialog" style="border: 1px solid rgba(255,255,255,.14); border-radius: 16px; background: rgba(10,14,30,.96); color: rgba(255,255,255,.92); width: min(820px, calc(100vw - 24px)); box-shadow: 0 24px 70px rgba(0,0,0,.45);">
+            <div style="display:flex; justify-content: space-between; gap:14px; align-items:flex-start; padding:14px 14px 10px;">
+                <div>
+                    <div style="font-weight: 900; letter-spacing: -.2px; font-size: 16px;">Service Management</div>
+                    <div id="service-management-sub" class="muted" style="margin-top: 4px;">Add, edit, or delete cleaning services</div>
+                </div>
+                <button id="service-management-close" class="btn dark" type="button" style="padding: 10px 12px;">Close</button>
+            </div>
+            <div style="padding: 0 14px 14px;">
+                <div id="service-management-body" style="background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.10); padding: 20px; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="font-weight: 700; font-size: 14px;">Available Services</h3>
+                        <button onclick="showAddServiceForm()" class="btn primary" style="padding: 8px 16px; font-size: 13px;">+ Add Service</button>
+                    </div>
+                    <div id="services-list" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div style="text-align: center; padding: 20px; color: rgba(255,255,255,.5);">Loading services...</div>
+                    </div>
+                    <div id="add-service-form" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.1);">
+                        <h4 style="font-weight: 600; margin-bottom: 12px; font-size: 14px;">Add New Service</h4>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            <input type="text" id="new-service-name" placeholder="Service Name" style="width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;">
+                            <input type="number" id="new-service-price" placeholder="Base Price ($)" step="0.01" style="width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;">
+                            <textarea id="new-service-description" placeholder="Service Description" rows="3" style="width: 100%; padding: 10px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333; resize: none;"></textarea>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="addNewService()" class="btn primary" style="padding: 10px 20px; font-size: 13px;">Add Service</button>
+                                <button onclick="hideAddServiceForm()" class="btn dark" style="padding: 10px 20px; font-size: 13px;">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </dialog>
+
+        <!-- Customer Tools Modal -->
+        <dialog id="customer-tools-dialog" style="border: 1px solid rgba(255,255,255,.14); border-radius: 16px; background: rgba(10,14,30,.96); color: rgba(255,255,255,.92); width: min(820px, calc(100vw - 24px)); box-shadow: 0 24px 70px rgba(0,0,0,.45);">
+            <div style="display:flex; justify-content: space-between; gap:14px; align-items:flex-start; padding:14px 14px 10px;">
+                <div>
+                    <div style="font-weight: 900; letter-spacing: -.2px; font-size: 16px;">Customer Tools</div>
+                    <div id="customer-tools-sub" class="muted" style="margin-top: 4px;">Bulk operations and customer management utilities</div>
+                </div>
+                <button id="customer-tools-close" class="btn dark" type="button" style="padding: 10px 12px;">Close</button>
+            </div>
+            <div style="padding: 0 14px 14px;">
+                <div id="customer-tools-body" style="background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.10); padding: 20px; border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                        <button onclick="exportCustomers()" class="btn" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">📥</span>
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px;">Export Customers</div>
+                                <div style="font-size: 12px; opacity: 0.7;">Download customer data as CSV</div>
+                            </div>
+                        </button>
+                        <button onclick="sendBulkEmail()" class="btn" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">📧</span>
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px;">Bulk Email</div>
+                                <div style="font-size: 12px; opacity: 0.7;">Send email to all customers</div>
+                            </div>
+                        </button>
+                        <button onclick="generateCustomerReport()" class="btn" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">📊</span>
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px;">Customer Report</div>
+                                <div style="font-size: 12px; opacity: 0.7;">Generate analytics report</div>
+                            </div>
+                        </button>
+                        <button onclick="showInactiveCustomers()" class="btn" style="padding: 16px; text-align: left; display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 24px;">🔍</span>
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px;">Inactive Customers</div>
+                                <div style="font-size: 12px; opacity: 0.7;">View customers with no activity</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </dialog>
+
+        <!-- Add Customer Modal -->
+        <dialog id="add-customer-dialog" style="border: 1px solid rgba(255,255,255,.14); border-radius: 16px; background: rgba(10,14,30,.96); color: rgba(255,255,255,.92); width: min(820px, calc(100vw - 24px)); box-shadow: 0 24px 70px rgba(0,0,0,.45);">
+            <div style="display:flex; justify-content: space-between; gap:14px; align-items:flex-start; padding:14px 14px 10px;">
+                <div>
+                    <div style="font-weight: 900; letter-spacing: -.2px; font-size: 16px;">Add New Customer</div>
+                    <div id="add-customer-sub" class="muted" style="margin-top: 4px;">Create a new customer account</div>
+                </div>
+                <button id="add-customer-close" class="btn dark" type="button" style="padding: 10px 12px;">Close</button>
+            </div>
+            <div style="padding: 0 14px 14px;">
+                <div id="add-customer-body" class="notice" style="background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.10); padding: 20px; border-radius: 8px;">
+                    <form id="add-customer-form" style="display: flex; flex-direction: column; gap: 16px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">First Name *</label>
+                                <input type="text" id="add-customer-firstname" placeholder="First name" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;" required>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 8px; font-weight: 600;">Last Name *</label>
+                                <input type="text" id="add-customer-lastname" placeholder="Last name" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Email *</label>
+                            <input type="email" id="add-customer-email" placeholder="customer@example.com" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;" required>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Password *</label>
+                            <input type="password" id="add-customer-password" placeholder="Password (min 6 characters)" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;" required>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Company Name</label>
+                            <input type="text" id="add-customer-company" placeholder="Company name (optional)" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Phone</label>
+                            <input type="tel" id="add-customer-phone" placeholder="Phone number (optional)" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.2); border-radius: 6px; background: rgba(255,255,255,.1); color: #333;">
+                        </div>
+                        <div id="add-customer-message" style="font-size: 14px;"></div>
+                        <button type="button" onclick="addNewCustomer()" class="btn primary" style="margin-top: 12px; padding: 12px 24px;">Add Customer</button>
+                    </form>
+                </div>
+            </div>
+        </dialog>
+    </div>
+    <script src="auth.js"></script>
+    <script>
+        // Check authentication on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            // Wait a moment for auth.js to fully load
+            setTimeout(() => {
+                try {
+                    const current = getCurrentUser();
+                    if (!current || current.type !== 'admin') {
+                        // If no valid admin session, redirect to main page login
+                        console.log('No valid admin session, redirecting to login...');
+                        window.location.href = 'index.html';
+                    } else {
+                        // Initialize dashboard if authenticated
+                        console.log('Admin authenticated, loading dashboard...');
+                        ensureAdminSession();
+
+                        // Ensure dashboard is visible
+                        document.body.style.display = 'block';
+                        document.querySelector('.page').style.display = 'block';
+                    }
+                } catch (error) {
+                    const messageDiv = document.getElementById('password-change-message');
+                    if (messageDiv) {
+                        messageDiv.textContent = 'Error changing password. Please try again.';
+                        messageDiv.style.color = '#ef4444';
+                    }
+                    console.error('Password change error:', error);
+                }
+            }, 100);
+
+            // Close password change modal
+            function closePasswordChangeModal() {
+                document.getElementById('password-change-dialog').close();
+            }
+
+            // Show password change modal
+            function showPasswordChangeModal() {
+                document.getElementById('password-change-dialog').showModal();
+                document.getElementById('password-change-message').textContent = '';
+                document.getElementById('password-change-form').reset();
+            }
+
+            // Change admin password
+            function changeAdminPassword() {
+                const currentPassword = document.getElementById('current-password').value;
+                const newPassword = document.getElementById('new-password').value;
+                const confirmPassword = document.getElementById('confirm-new-password').value;
+                const messageDiv = document.getElementById('password-change-message');
+
+                // Validate inputs
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                    messageDiv.textContent = 'Please fill in all password fields.';
+                    messageDiv.style.color = '#ef4444';
+                    return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                    messageDiv.textContent = 'New passwords do not match.';
+                    messageDiv.style.color = '#ef4444';
+                    return;
+                }
+
+                if (newPassword.length < 6) {
+                    messageDiv.textContent = 'New password must be at least 6 characters long.';
+                    messageDiv.style.color = '#ef4444';
+                    return;
+                }
+
+                // Get current admin credentials and verify
+                const admin = getAdminCredentials();
+                if (currentPassword !== admin.password) {
+                    messageDiv.textContent = 'Current password is incorrect.';
+                    messageDiv.style.color = '#ef4444';
+                    return;
+                }
+
+                // Update password
+                admin.password = newPassword;
+                setAdminCredentials(admin);
+
+                messageDiv.textContent = 'Password updated successfully!';
+                messageDiv.style.color = '#10b981';
+
+                // Close modal after 2 seconds
+                setTimeout(() => {
+                    closePasswordChangeModal();
+                }, 2000);
+            }
+
+            // Show Service Management Modal
+            function showServiceManagement() {
+                document.getElementById('service-management-dialog').showModal();
+                loadServices();
+            }
+
+            // Load services for management
+            function loadServices() {
+                const servicesList = document.getElementById('services-list');
+                const services = JSON.parse(localStorage.getItem('cleaningServices') || '[]');
+
+                if (services.length === 0) {
+                    servicesList.innerHTML = '<div style="text-align: center; padding: 20px; color: rgba(255,255,255,.5);">No services available. Add your first service!</div>';
+                    return;
+                }
+
+                servicesList.innerHTML = services.map((service, index) => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,.05); border-radius: 6px;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 14px;">${service.name}</div>
+                            <div style="font-size: 12px; opacity: 0.7;">$${parseFloat(service.price).toFixed(2)} - ${service.description || 'No description'}</div>
+                        </div>
+                        <button onclick="deleteService(${index})" class="btn" style="padding: 6px 12px; font-size: 12px; border-color: rgba(239,68,68,.28); background: rgba(239,68,68,.12);">Delete</button>
+                    </div>
+                `).join('');
+            }
+
+            // Show add service form
+            function showAddServiceForm() {
+                document.getElementById('add-service-form').style.display = 'block';
+            }
+
+            // Hide add service form
+            function hideAddServiceForm() {
+                document.getElementById('add-service-form').style.display = 'none';
+                document.getElementById('new-service-name').value = '';
+                document.getElementById('new-service-price').value = '';
+                document.getElementById('new-service-description').value = '';
+            }
+
+            // Add new service
+            function addNewService() {
+                const name = document.getElementById('new-service-name').value.trim();
+                const price = document.getElementById('new-service-price').value;
+                const description = document.getElementById('new-service-description').value.trim();
+
+                if (!name || !price) {
+                    alert('Please enter service name and price.');
+                    return;
+                }
+
+                const services = JSON.parse(localStorage.getItem('cleaningServices') || '[]');
+                services.push({
+                    name,
+                    price: parseFloat(price),
+                    description,
+                    id: Date.now()
+                });
+                localStorage.setItem('cleaningServices', JSON.stringify(services));
+
+                hideAddServiceForm();
+                loadServices();
+            }
+
+            // Delete service
+            function deleteService(index) {
+                if (confirm('Are you sure you want to delete this service?')) {
+                    const services = JSON.parse(localStorage.getItem('cleaningServices') || '[]');
+                    services.splice(index, 1);
+                    localStorage.setItem('cleaningServices', JSON.stringify(services));
+                    loadServices();
+                }
+            }
+
+            // Show Customer Tools
+            function showCustomerTools() {
+                document.getElementById('customer-tools-dialog').showModal();
+            }
+
+            // Send bulk email (placeholder)
+            function sendBulkEmail() {
+                alert('Bulk email feature would open an email composer with all customer emails pre-filled. This requires email server integration.');
+            }
+
+            // Generate customer report (placeholder)
+            function generateCustomerReport() {
+                const users = getUsers();
+                const report = {
+                    totalCustomers: users.length,
+                    totalInvoices: users.reduce((acc, u) => acc + (u.invoices ? u.invoices.length : 0), 0),
+                    totalRequests: users.reduce((acc, u) => acc + (u.service_requests ? u.service_requests.length : 0), 0),
+                    generatedAt: new Date().toISOString()
+                };
+                alert(`Customer Report:\n\nTotal Customers: ${report.totalCustomers}\nTotal Invoices: ${report.totalInvoices}\nTotal Service Requests: ${report.totalRequests}\n\nGenerated: ${report.generatedAt}`);
+            }
+
+            // Show inactive customers
+            function showInactiveCustomers() {
+                const users = getUsers();
+                const inactive = users.filter(u => (!u.invoices || u.invoices.length === 0) && (!u.service_requests || u.service_requests.length === 0));
+
+                if (inactive.length === 0) {
+                    alert('No inactive customers found. All customers have some activity.');
+                } else {
+                    const names = inactive.map(u => u.email).join('\n');
+                    alert(`Inactive Customers (${inactive.length}):\n\n${names}`);
+                }
+            }
+
+            // Show Add Customer Modal
+            function showAddCustomerModal() {
+                document.getElementById('add-customer-dialog').showModal();
+                document.getElementById('add-customer-message').textContent = '';
+                document.getElementById('add-customer-form').reset();
+            }
+
+            // Add new customer
+            function addNewCustomer() {
+                const firstName = document.getElementById('add-customer-firstname').value.trim();
+                const lastName = document.getElementById('add-customer-lastname').value.trim();
+                const email = document.getElementById('add-customer-email').value.trim().toLowerCase();
+                const password = document.getElementById('add-customer-password').value;
+                const company = document.getElementById('add-customer-company').value.trim();
+                const phone = document.getElementById('add-customer-phone').value.trim();
+                const messageDiv = document.getElementById('add-customer-message');
+
+                // Validation
+                if (!firstName || !lastName || !email || !password) {
+                    messageDiv.textContent = 'Please fill in all required fields.';
+                    messageDiv.style.color = '#ef4444';
+                    return;
+                }
+
+                if (!validateEmail(email)) {
+                    messageDiv.textContent = 'Please enter a valid email address.';
+                    messageDiv.style.color = '#ef4444';
+                    return;
+                }
+
+                if (password.length < 6) {
+                    messageDiv.textContent = 'Password must be at least 6 characters long.';
+                    messageDiv.style.color = '#ef4444';
+                    return;
+                }
+
+                // Check if email already exists
+                const users = getUsers();
+                if (users.find(u => u.email === email)) {
+                    messageDiv.textContent = 'This email is already registered.';
+                    messageDiv.style.color = '#ef4444';
+                    return;
+                }
+
+                // Create new customer
+                const newCustomer = {
+                    email,
+                    password,
+                    first_name: firstName,
+                    last_name: lastName,
+                    company_name: company || 'N/A',
+                    phone: phone || 'N/A',
+                    invoices: [],
+                    service_requests: []
+                };
+
+                users.push(newCustomer);
+                setUsers(users);
+
+                messageDiv.textContent = 'Customer added successfully!';
+                messageDiv.style.color = '#10b981';
+
+                // Refresh dashboard and close modal
+                setTimeout(() => {
+                    document.getElementById('add-customer-dialog').close();
+                    ensureAdminSession();
+                }, 1500);
+            }
+
+            // Show Analytics Dashboard
+            function showAnalytics() {
+                alert(`Analytics feature coming soon! This will provide:
+
+• Revenue tracking and trends
+• Service request analytics
+• Customer acquisition metrics
+• Performance dashboards
+• Popular service reports
+• Customer satisfaction scores
+
+These analytics will help you make data-driven business decisions.`);
+            }
+
+            // Expose modal and action functions to the global scope so inline onclick handlers can call them
+            window.showPasswordChangeModal = showPasswordChangeModal;
+            window.showServiceManagement = showServiceManagement;
+            window.showCustomerTools = showCustomerTools;
+            window.showAddCustomerModal = showAddCustomerModal;
+            window.changeAdminPassword = changeAdminPassword;
+            window.showAddServiceForm = showAddServiceForm;
+            window.hideAddServiceForm = hideAddServiceForm;
+            window.addNewService = addNewService;
+            window.deleteService = deleteService;
+            window.sendBulkEmail = sendBulkEmail;
+            window.generateCustomerReport = generateCustomerReport;
+            window.showInactiveCustomers = showInactiveCustomers;
+            window.addNewCustomer = addNewCustomer;
+            window.showAnalytics = showAnalytics;
+        });
+    </script>
+</body>
+
+</html>
